@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	ntlm "github.com/launchdarkly/go-ntlm-proxy-auth"
 	"github.com/jarrodhroberson/gofeed/atom"
 	"github.com/jarrodhroberson/gofeed/json"
 	"github.com/jarrodhroberson/gofeed/rss"
+	ntlm "github.com/launchdarkly/go-ntlm-proxy-auth"
 )
 
 // ErrFeedTypeNotDetected is returned when the detection system can not figure
@@ -192,7 +192,7 @@ func (f *Parser) httpClient(ctx context.Context) *http.Client {
 		proxyURL := url.URL{
 			Scheme: "http",
 			User:   url.UserPassword(ctx.Value("login").(string), ctx.Value("password").(string)),
-			Host:   "naproxy.gm.com",
+			Host:   ctx.Value("proxyHost").(string),
 		}
 		ntlmDialContext := ntlm.NewNTLMProxyDialContext(dialer, proxyURL, ctx.Value("login").(string), ctx.Value("password").(string), "nam", nil)
 		f.Client = &http.Client{Transport: &http.Transport{
