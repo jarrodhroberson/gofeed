@@ -1,10 +1,11 @@
-module github.com/mmcdole/gofeed
+module github.com/jarrodhroberson/gofeed
 
-go 1.14
+go 1.17
 
 require (
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/json-iterator/go v1.1.10
+	github.com/launchdarkly/go-ntlm-proxy-auth v1.0.1
 	github.com/mmcdole/goxpp v0.0.0-20181012175147-0068e33feabf
 	github.com/stretchr/testify v1.3.0
 	github.com/urfave/cli v1.22.3

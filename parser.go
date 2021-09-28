@@ -6,9 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
+	ntlm "github.com/launchdarkly/go-ntlm-proxy-auth"
 	"github.com/mmcdole/gofeed/atom"
 	"github.com/mmcdole/gofeed/json"
 	"github.com/mmcdole/gofeed/rss"
@@ -92,12 +96,11 @@ func (f *Parser) ParseURL(feedURL string) (feed *Feed, err error) {
 // attempts to parse the response into the universal feed type.
 // Request could be canceled or timeout via given context
 func (f *Parser) ParseURLWithContext(feedURL string, ctx context.Context) (feed *Feed, err error) {
-	client := f.httpClient()
-
 	req, err := http.NewRequest("GET", feedURL, nil)
 	if err != nil {
 		return nil, err
 	}
+	client := f.httpClient(ctx)
 	req = req.WithContext(ctx)
 	req.Header.Set("User-Agent", f.UserAgent)
 	resp, err := client.Do(req)
@@ -180,10 +183,24 @@ func (f *Parser) jsonTrans() Translator {
 	return f.JSONTranslator
 }
 
-func (f *Parser) httpClient() *http.Client {
-	if f.Client != nil {
-		return f.Client
+func (f *Parser) httpClient(ctx context.Context) *http.Client {
+	if _, ok := ctx.Value("Proxy-Authorization").(string); ok {
+		dialer := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}
+		proxyURL := url.URL{
+			Scheme: "http",
+			User:   url.UserPassword(ctx.Value("login").(string), ctx.Value("password").(string)),
+			Host:   "naproxy.gm.com",
+		}
+		ntlmDialContext := ntlm.NewNTLMProxyDialContext(dialer, proxyURL, ctx.Value("login").(string), ctx.Value("password").(string), "nam", nil)
+		f.Client = &http.Client{Transport: &http.Transport{
+			Proxy:       nil,
+			DialContext: ntlmDialContext,
+		}}
+	} else {
+		f.Client = &http.Client{}
 	}
-	f.Client = &http.Client{}
 	return f.Client
 }
